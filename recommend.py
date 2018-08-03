@@ -1,13 +1,12 @@
 import math
 import os
 import shutil
-
+import datetime
 import numpy as np
 import pandas as pd
 import tensorflow as tf
 from scipy.sparse import coo_matrix
 from tensorflow.contrib.factorization.python.ops import factorization_ops
-
 
 TEST_SET_RATIO = 10
 
@@ -119,9 +118,8 @@ def train_model(data):
 
 
 def save_model(ratings, user_map, item_map, row_factor, col_factor):
-    model_dir = 'model'
-    if os.path.exists(model_dir):
-        shutil.rmtree(model_dir)
+    subfolder = datetime.datetime.now()
+    model_dir = 'model/' + "{:%y-%b-%d:%H:%M:%S}".format(subfolder)
 
     os.makedirs(model_dir)
     np.save(os.path.join(model_dir, 'ratings'), ratings)

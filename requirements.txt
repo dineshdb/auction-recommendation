@@ -1,0 +1,9 @@
+pandas
+tensorflow
+numpy 
+shutil
+os
+math
+flask
+flask_cors 
+scipy

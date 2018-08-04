@@ -1,9 +1,9 @@
+import datetime
 import math
 import os
-import shutil
-import datetime
+
+import mysql.connector
 import numpy as np
-import pandas as pd
 import tensorflow as tf
 from scipy.sparse import coo_matrix
 from tensorflow.contrib.factorization.python.ops import factorization_ops
@@ -17,20 +17,32 @@ implicit = 0
 
 
 def make_data():
-    dataFrame = pd.read_csv('u.csv', sep='\t', names=['user_id', 'item_id', 'rating', 'timestamp'],
-                            dtype={
-                                'user_id': np.int32,
-                                'item_id': np.int32,
-                                'rating': np.float32,
-                                'timestamp': np.int32,
-                            })
-    dataFrame = dataFrame.values
-    userIDs = dataFrame[:, 0]
-    itemIDs = dataFrame[:, 1]
-    ratedValues = dataFrame[:, 2]
+    cnx = mysql.connector.connect(user='auction_user', database='auction_db', port='3306', host='localhost',
+                                  password='ThePassword1#')
+    cursor = cnx.cursor()
 
+    query = ("SELECT * from user_auctions_participated")
+
+    cursor.execute(query)
+
+    userIDs = []
+    itemIDs = []
+    ratedValues = []
+    for (uID, iID) in cursor:
+        userIDs.append(uID)
+        itemIDs.append(iID)
+        ratedValues.append(5)
+
+    cursor.close()
+    cnx.close()
+
+    userIDs = np.array(userIDs)
+    itemIDs = np.array(itemIDs)
+    ratedValues = np.array(ratedValues)
+    # print(userIDs)
     ratings = np.zeros((userIDs.shape[0], 3), dtype=object)
     unique_users = np.unique(userIDs)
+    # print(unique_users)
     unique_items = np.unique(itemIDs)
 
     totalUsers = unique_users.shape[0]
@@ -40,7 +52,7 @@ def make_data():
 
     if totalUsers != maximumUserID or totalItems != maximumItemID:
         z = np.zeros(maximumUserID + 1, dtype=int)
-        z[unique_users] = np.arange(maximumUserID)
+        z[unique_users] = np.arange(totalUsers)
         u_r = z[userIDs]
 
         z = np.zeros(maximumItemID + 1, dtype=int)
@@ -51,9 +63,9 @@ def make_data():
         ratings[:, 1] = i_r
         ratings[:, 2] = ratedValues
     else:
-        ratings = dataFrame
-        ratings[:, 0] -= 1
-        ratings[:, 1] -= 1
+        ratings[:, 2] = ratedValues
+        ratings[:, 0] -= userIDs - 1
+        ratings[:, 1] -= itemIDs - 1
 
     testIndices = sorted(np.random.choice(range(len(ratings)), size=int(len(ratings) / 10), replace=False))
     testData = ratings[testIndices]
@@ -61,6 +73,7 @@ def make_data():
 
     u_train, i_train, r_train = trainData[:, 0], trainData[:, 1], trainData[:, 2]
     train_sparse = coo_matrix((r_train, (u_train, i_train)), shape=(maximumUserID, totalItems))
+
     u_test, i_test, r_test = testData[:, 0], testData[:, 1], testData[:, 2]
     test_sparse = coo_matrix((r_test, (u_test, i_test)), shape=(maximumUserID, totalItems))
 
@@ -72,27 +85,30 @@ def train_model(data):
     wt_type = 0
     num_rows, num_cols = data.shape
 
-    row_wts = np.ones(num_rows)
-    col_wts = None
-    times_rated = np.array((data > 0.0).sum(0)).transpose()
-
-    if wt_type == implicit:
-        frac = []
-        for i in times_rated:
-            if i != 0:
-                frac.append(1.0 / i)
-            else:
-                frac.append(0.0)
-        col_wts = np.array(np.power(frac, 0.08)).flatten()
-    else:
-        col_wts = np.array(100 * times_rated).flatten()
+    # row_wts = np.ones(num_rows)
+    # col_wts = None
+    # a = (data > 0.0).sum(0)
+    # print(a.shape)
+    #
+    # times_rated = np.array((data > 0).sum(0))
+    # print(times_rated)
+    # if wt_type == implicit:
+    #     frac = []
+    #     for i in times_rated:
+    #         if i != 0:
+    #             frac.append(1.0 / i)
+    #         else:
+    #             frac.append(0.0)
+    #     col_wts = np.array(np.power(frac, 0.08)).flatten()
+    # else:
+    #     col_wts = np.array(100 * times_rated).flatten()
 
     with tf.Graph().as_default():
         input_tensor = tf.SparseTensor(indices=list(zip(data.row, data.col)), values=(data.data).astype(np.float32),
                                        dense_shape=data.shape)
 
         model = factorization_ops.WALSModel(num_rows, num_cols, n_components=10, unobserved_weight=0.001,
-                                            regularization=0.08, row_weights=row_wts, col_weights=col_wts)
+                                            regularization=0.08, row_weights=None, col_weights=None)
         row_factor = model.row_factors[0]
         col_factor = model.col_factors[0]
 
@@ -119,7 +135,7 @@ def train_model(data):
 
 def save_model(ratings, user_map, item_map, row_factor, col_factor):
     subfolder = datetime.datetime.now()
-    model_dir = 'model/' + "{:%y-%b-%d:%H:%M:%S}".format(subfolder)
+    model_dir = 'model/' + "{:%y%m%d%H%M%S}".format(subfolder)
 
     os.makedirs(model_dir)
     np.save(os.path.join(model_dir, 'ratings'), ratings)

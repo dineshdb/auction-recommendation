@@ -77,7 +77,7 @@ def make_data():
     u_test, i_test, r_test = testData[:, 0], testData[:, 1], testData[:, 2]
     test_sparse = coo_matrix((r_test, (u_test, i_test)), shape=(maximumUserID, totalItems))
 
-    return ratings, ratings[:, 0], ratings[:, 1], train_sparse, test_sparse
+    return ratings, unique_users, unique_items, train_sparse, test_sparse
 
 
 def train_model(data):

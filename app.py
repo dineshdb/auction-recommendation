@@ -1,13 +1,17 @@
 import numpy as np
 from flask import *
+import os
+import glob
 
 app = Flask(__name__)
 
 @app.route('/<int:user_idx>')
 def get(user_idx):
-    Ratings = np.load('model/ratings.npy')
-    row_factor = np.load('model/row.npy')
-    col_factor = np.load('model/col.npy')
+    modelList = glob.glob('model/*')
+    latestFolder = max(modelList, key=os.path.getctime)
+    Ratings = np.load(latestFolder + '/ratings.npy')
+    row_factor = np.load(latestFolder + '/row.npy')
+    col_factor = np.load(latestFolder + '/col.npy')
     user_rated = [i[1] for i in Ratings if i[0] == user_idx]
 
     assert (row_factor.shape[0] - len(user_rated)) >= 5

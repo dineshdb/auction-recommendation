@@ -1,17 +1,28 @@
 import numpy as np
 from flask import *
+from flask_cors import CORS
 import os
 import glob
 
 app = Flask(__name__)
+CORS(app)
 
-@app.route('/<int:user_idx>')
-def get(user_idx):
+
+@app.route('/<int:userID>')
+def get(userID):
     modelList = glob.glob('model/*')
     latestFolder = max(modelList, key=os.path.getctime)
     Ratings = np.load(latestFolder + '/ratings.npy')
     row_factor = np.load(latestFolder + '/row.npy')
+    user_map = np.load(latestFolder + '/user.npy')
+    item_map = np.load(latestFolder + '/item.npy')
     col_factor = np.load(latestFolder + '/col.npy')
+
+    for i, userid in enumerate(user_map):
+        if userID == userID:
+            user_idx = i + 1
+            break
+
     user_rated = [i[1] for i in Ratings if i[0] == user_idx]
 
     assert (row_factor.shape[0] - len(user_rated)) >= 5
@@ -22,8 +33,8 @@ def get(user_idx):
     recommended_items = [i for i in candidate_items if i not in user_rated]
     recommended_items = recommended_items[-5:]
     recommended_items.reverse()
-    print(recommended_items)
-    recommendations = [{str(i): int(item)} for i, item in enumerate(recommended_items)]
+    a = user_map[recommended_items]
+    recommendations = [{str(i): int(item)} for i, item in enumerate(a)]
     return jsonify(recommendations)
 
 

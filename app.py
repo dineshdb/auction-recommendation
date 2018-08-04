@@ -1,10 +1,7 @@
 import numpy as np
 from flask import *
-from flask_cors import CORS
 
 app = Flask(__name__)
-CORS(app)
-
 
 @app.route('/<int:user_idx>')
 def get(user_idx):

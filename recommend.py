@@ -47,6 +47,7 @@ def make_data():
 
     totalUsers = unique_users.shape[0]
     totalItems = unique_items.shape[0]
+
     maximumUserID = int(unique_users[-1])
     maximumItemID = int(unique_items[-1])
 
@@ -171,10 +172,15 @@ def get_rmse(output_row, output_col, actual):
     return rmse
 
 
-Ratings, user_map, item_map, tr_sparse, test_sparse = make_data()
-output_row, output_col = train_model(tr_sparse)
-save_model(Ratings, user_map, item_map, output_row, output_col)
-train_rmse = get_rmse(output_row, output_col, tr_sparse)
-test_rmse = get_rmse(output_row, output_col, test_sparse)
+def do():
+    global Ratings
+    Ratings, user_map, item_map, tr_sparse, test_sparse = make_data()
+    print(Ratings)
+    output_row, output_col = train_model(tr_sparse)
+    save_model(Ratings, user_map, item_map, output_row, output_col)
+    train_rmse = get_rmse(output_row, output_col, tr_sparse)
+    test_rmse = get_rmse(output_row, output_col, test_sparse)
 
-print(generate_recommendations(10, output_row, output_col, 5))
+    a = generate_recommendations(10, output_row, output_col, 5)
+    print(user_map[a])
+

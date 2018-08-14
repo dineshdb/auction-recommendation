@@ -39,8 +39,8 @@ def get(userID):
     recommended_items = recommended_items[-5:]
     recommended_items.reverse()
     a = user_map[recommended_items]
-    recommendations = [{str(i): int(item)} for i, item in enumerate(a)]
-    return jsonify(recommendations)
+    recommendations = [int(i) for i, item in enumerate(a)]
+    return jsonify({"recommendations" : recommendations})
 
 
 if __name__ == '__main__':

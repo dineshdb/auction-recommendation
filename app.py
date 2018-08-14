@@ -2,6 +2,7 @@ import numpy as np
 from flask import *
 from flask_cors import CORS
 import os
+import recommend
 import glob
 
 app = Flask(__name__)
@@ -17,11 +18,15 @@ def get(userID):
     user_map = np.load(latestFolder + '/user.npy')
     item_map = np.load(latestFolder + '/item.npy')
     col_factor = np.load(latestFolder + '/col.npy')
-
+    user_idx = 10
+    found = False
     for i, userid in enumerate(user_map):
         if userID == userID:
             user_idx = i + 1
+            found = True
             break
+    if not found:
+        recommend.do()
 
     user_rated = [i[1] for i in Ratings if i[0] == user_idx]
 
